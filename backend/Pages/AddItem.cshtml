@@ -1,0 +1,223 @@
+﻿@page
+@model backend.Pages.IndexModel
+@{
+}
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Admin</a>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="AddItem">Add item <span class="sr-only">(current)</span></a>
+            </li>
+        </ul>
+    </div>
+</nav>
+<div class="container footer">
+    <div class="one" style="width:500px; padding-right:50px">
+        <label id="uploadResponse"></label>
+        <form method="post" id="my_form">
+            <div class="form-group">
+                <label for="exampleInputEmail1">Item type</label>
+                <select class="custom-select" id="type">
+                    <option selected>Choose...</option>
+                    <option value="1">Sword</option>
+                    <option value="2">Armor</option>
+                    <option value="3">Elixir</option>
+                    <option value="4">TreeHelper</option>
+                    <option value="5">WaterHelper</option>
+                    <option value="6">RockHelper</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="exampleInputEmail1">Item subtype</label>
+                <select class="custom-select" id="subtype">
+                    <option selected>Choose...</option>
+                    <option value="1">Health</option>
+                    <option value="2">Energy</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="exampleInputPassword1">Item name</label>
+                <input type="text" id="name" class="form-control" placeholder="Herculus">
+            </div>
+            <div class="form-group">
+                <label for="exampleInputPassword1">Item power</label>
+                <input type="number" id="power" class="form-control" placeholder="0-100">
+            </div>
+            <div class="form-group">
+                <label for="exampleInputPassword1">Item price</label>
+                <input type="number" id="price" class="form-control" placeholder="0-100">
+            </div>
+            <div class="form-group">
+                <label for="exampleInputPassword1">Item photo source url</label>
+                <input type="text" id="photo" class="form-control" placeholder="URL">
+            </div>
+        </form>
+        <button class="btn btn-success" onclick="AddItem()">Save</button>
+        <button class="btn btn-danger" onclick="UndoAction()">Undo</button>
+        <button class="btn btn-danger" onclick="RedoAction()">Redo</button>
+        <button class="btn btn-primary" onclick="SubmitAllItems()">Submit items</button>
+    </div>
+    <div class="two" style="padding-left:100px">
+        <table class="table" style="width:600px">
+            
+        </table>
+    </div>
+</div>
+<style>
+    .one {
+        width: 15%;
+        height: 200px;
+        float: left;
+    }
+    .two {
+        margin-left: 15%;
+        height: 200px;
+    }
+</style>
+<script>
+    let mountains = [
+      { Id: 0, Type: 0, subtype: 0, name: "testas", power: 10, price: 20, url: "testas.lt" },
+    ];
+     let itemsToShow = [];
+    class Item {
+        constructor(type, subtype, name, power, price, url) {
+            this.Id = "0";
+            this.ItemType = type;
+            this.ItemSubType = subtype;
+            this.name = name;
+            this.power = power;
+            this.price = price;
+            this.ItemPhotoSrc = url;
+        }
+    }
+    class Memento {
+        constructor(items) {
+            this.items = items;
+        }
+        getSavedItem() {
+            return this.items;
+        }
+    }
+    class Originator {
+        constructor() {
+            this.items = [];
+        }
+        set(itemsToStore) {
+            this.items = itemsToStore;
+        }
+        storeInMemento() {
+            return new Memento(this.items);
+        }
+        restoreFromMomento(memento) {
+            this.items = memento.getSavedItem();
+            return this.items;
+        }
+    }
+    class CareTaker {
+        constructor() {
+            this.savedItems = [];
+        }
+        addMemento(m) {
+            this.savedItems.push(m);
+        }
+        getMemento(index) {
+            return this.savedItems[index];
+        }
+    }
+
+    function generateTableHead(table, data) {
+      let thead = table.createTHead();
+      let row = thead.insertRow();
+      for (let key of data) {
+        let th = document.createElement("th");
+        let text = document.createTextNode(key);
+        th.appendChild(text);
+        row.appendChild(th);
+      }
+    }
+
+    function generateTable(table, data) {
+        while (document.getElementById("row") != null) {
+            document.getElementById("row").remove();
+        }
+      for (let element of data) {
+          let row = table.insertRow();
+          row.setAttribute("id", "row", 0);
+        for (key in element) {
+          let cell = row.insertCell();
+          let text = document.createTextNode(element[key]);
+          cell.appendChild(text);
+        }
+      }
+    }
+
+    let table = document.querySelector("table");
+    let data = Object.keys(mountains[0]);
+    generateTableHead(table, data);
+
+    var origin = new Originator();
+    var care = new CareTaker();
+    var saveditems = 0;
+    var currentSaved = 0;
+
+    function UndoAction() {
+        if (currentSaved >= 0) {
+            currentSaved--;
+            itemsToShow = origin.restoreFromMomento(care.getMemento(currentSaved - 1));
+            generateTable(table, itemsToShow);
+        }
+    }
+
+    function RedoAction() {
+        if (saveditems > currentSaved) {
+            currentSaved++;
+            itemsToShow = origin.restoreFromMomento(care.getMemento(currentSaved-1));
+            generateTable(table, itemsToShow);
+        }
+    }
+
+    function AddItem() {
+         var price = $('#price')[0].value;
+        var ItemType = $('#type')[0].value;
+        var ItemSubType = $('#subtype')[0].value;
+        if (ItemSubType == "Choose...") ItemSubType = "0";
+        var obj = new Item(ItemType, ItemSubType, $('#name')[0].value, $('#power')[0].value, price, $('#photo')[0].value);
+        console.log(obj);
+        console.log(123);
+        var items = [];
+        if (typeof care.getMemento(currentSaved-1) !== 'undefined') {
+            items = origin.restoreFromMomento(care.getMemento(currentSaved-1));
+        }
+        const cloneed = JSON.parse(JSON.stringify(items));
+        cloneed.push(obj)
+        origin.set(cloneed);
+        care.addMemento(origin.storeInMemento());
+        itemsToShow = cloneed;
+        saveditems++;
+        currentSaved++;
+        generateTable(table, itemsToShow);
+    }
+
+    function SubmitAllItems() {
+        var asd = origin.restoreFromMomento(care.getMemento(currentSaved - 1));
+        $.ajax({
+            type: "POST",
+            url: "api/items/itemCreation",
+            data: JSON.stringify(origin.restoreFromMomento(care.getMemento(currentSaved-1))),
+            contentType: "application/json; charset=utf-8",
+            success: function(data) {
+                alert("Items created");
+                location.reload();
+            },
+            error: function (data) {
+                alert("Please fix item data");
+              }
+        });
+    }
+</script>
